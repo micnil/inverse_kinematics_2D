@@ -37,8 +37,8 @@ MYAPP.event = {
 MYAPP.main = function (){
     var canvas = document.getElementById('mainCanvas'),
         context = canvas.getContext('2d'),
-        bones = [],
-        numBones = 2,
+        boneChain = [],
+        numBones = 4,
         jacobian,
         inverseJacobian,
         mouse = MYAPP.event.addMouseListener(canvas),
@@ -46,21 +46,41 @@ MYAPP.main = function (){
         theta_delta,
         e;
 
-/*    var j = numBones;
-    while (j--) {
-        bones.push(new Bone(canvas.width/2, canvas.height/2, 50));
-    }*/
-    bones.push(new Bone(canvas.width/2, canvas.height/2, canvas.width/2, canvas.height/2 + 30));
-    bones.push(new Bone(bones[bones.length-1].endPos.e(1), bones[bones.length-1].endPos.e(2), bones[bones.length-1].endPos.e(1) + 30, bones[bones.length-1].endPos.e(2)));
+    function createBoneChain(xStart, yStart, numOfBones){
+
+        //TODO
+        //Check what happens if only 1 bone
+
+        var boneChain = [];
+        boneChain.push(new Bone(xStart, yStart));
+        numOfBones--;
+        while(numOfBones--){
+            boneChain.push(new Bone());
+        }
+        function connectBone(bone, i){
+            bone.endPos = bone.endPos.add($V([0,i*10,0]));  
+
+            if(i!==0){
+                bone.connect(boneChain[i-1])
+            }  
+            if(i%2!==0){
+                bone.endPos = bone.endPos.x(-1);  
+            }
+        }
+        boneChain.forEach(connectBone);
+
+        return boneChain;
+    }
+
+
+    boneChain = createBoneChain(canvas.width/2, canvas.height/2, numBones);
 
     function createJacobian() {
 
         var jacobianRows = [];
-        var i = numBones;
-        while(i--){
 
-            //row in jacobian matrix = axis of rotation CROSS (End effector - position of bone i)
-            var row = Sylvester.Vector.k.cross(bones[numBones-1].endPos.subtract(bones[i].startPos));  
+        for(var i = 0; i<numBones;i++){
+            var row = boneChain[i].rotationAxis.cross(boneChain[numBones-1].getGlobalEndPos().subtract(boneChain[i].startPos));  
             jacobianRows.push(row.elements);
         }
         
@@ -74,11 +94,12 @@ MYAPP.main = function (){
         if(jacobian.isSquare() && !jacobian.isSingular()){
             inverseJacobian = jacobian.inverse();
         } else {
-            //pseudo inverse
-            //A'*(A*A')^-1
-            
-
+            //pseudo inverse with damping
+            //(A'*A)^-1*A'
+            var lambda = 10.0;
+            console.log(jacobian.inspect());
             var square = jacobian.transpose().x(jacobian);
+            square = square.add(Sylvester.Matrix.I(square.dimensions().rows).x(Math.pow(lambda,2)));
             var inversee = square.inverse();
             inverseJacobian = inversee.x(jacobian.transpose());
         }
@@ -89,33 +110,32 @@ MYAPP.main = function (){
     }
 
     function move(bone, i){
-        bone.endPos = bone.endPos.subtract(bone.startPos);
-        bone.rotation = Sylvester.Matrix.RotationZ(theta_delta[i]);
-        //console.log(bone.rotation.inspect());
-        bone.endPos = bone.rotation.x(bone.endPos);
-        bone.endPos = bone.endPos.add(bone.startPos);
-   /*     if(i < numBones-1){
-            var current = bone.endPos.subtract(bone.startPos);
-            bones[i+1].startPos = bones[i+1].startPos.add(current); 
-        }*/
+
+        
+        bone.rotateLocally(theta_delta[i]);
+        
+        if(i !== 0){
+
+            bone.connect(boneChain[i-1]);
+
+        }
     }
 
     (function drawFrame () {
-        e = bones[numBones-1].endPos;
-        /*console.log("mouse x:%s y:%s",mouse.x,mouse.y);
-        console.log(e.inspect());*/
+        window.requestAnimationFrame(drawFrame, mainCanvas);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        e = boneChain[numBones-1].getGlobalEndPos();
+
         e_delta = $V([mouse.x, mouse.y, 0]).subtract(e);
 
         createJacobian();
         createInverseJacobian();
 
-        /*console.log(e_delta.inspect());
-        console.log(inverseJacobian.inspect());*/
-        theta_delta = (inverseJacobian.x(e_delta)).x(0.016).elements;
-        window.requestAnimationFrame(drawFrame, mainCanvas);
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        bones.forEach(move);
-        bones.forEach(draw);
+        theta_delta = (inverseJacobian.x(e_delta)).x(0.017).elements;
+
+        boneChain.forEach(move);
+        boneChain.forEach(draw);
     }());
 }
 
