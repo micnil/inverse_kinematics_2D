@@ -1,4 +1,8 @@
 "use strict";
+/*global Bone */
+/*global Sylvester */
+/*global $M */
+/*global $V */
 
 var MYAPP = MYAPP || {};
 
@@ -32,36 +36,31 @@ MYAPP.event = {
 
         return mouse;
     }
-}
+};
 
 MYAPP.main = function (){
     var canvas = document.getElementById('mainCanvas'),
         context = canvas.getContext('2d'),
-        boneChain = [],
-        numBones = 4,
+        boneChain = [], 
+        numBones = 4, 
         jacobian,
         inverseJacobian,
         mouse = MYAPP.event.addMouseListener(canvas),
-        e_delta,
-        theta_delta,
-        e;
+        e_delta, //will be used for delta mouse movement
+        theta_delta, //will be an array with each joint delta rotation angle
+        e; //end effector, the last point on the chain
 
     function createBoneChain(xStart, yStart, numOfBones){
-
-        //TODO
-        //Check what happens if only 1 bone
-
         var boneChain = [];
         boneChain.push(new Bone(xStart, yStart));
         numOfBones--;
         while(numOfBones--){
             boneChain.push(new Bone());
         }
-        function connectBone(bone, i){
-            bone.endPos = bone.endPos.add($V([0,i*10,0]));  
+        function connectBone(bone, i){ 
 
             if(i!==0){
-                bone.connect(boneChain[i-1])
+                bone.connect(boneChain[i-1]);
             }  
             if(i%2!==0){
                 bone.endPos = bone.endPos.x(-1);  
@@ -87,7 +86,7 @@ MYAPP.main = function (){
         jacobian = $M(jacobianRows);
         jacobian = jacobian.transpose();
 
-    };
+    }
 
     function createInverseJacobian(){
 
@@ -95,13 +94,14 @@ MYAPP.main = function (){
             inverseJacobian = jacobian.inverse();
         } else {
             //pseudo inverse with damping
-            //(A'*A)^-1*A'
+            //(A'*A + lambda*I)^-1*A'
+
+            //damping constant
             var lambda = 10.0;
-            console.log(jacobian.inspect());
             var square = jacobian.transpose().x(jacobian);
-            square = square.add(Sylvester.Matrix.I(square.dimensions().rows).x(Math.pow(lambda,2)));
-            var inversee = square.inverse();
-            inverseJacobian = inversee.x(jacobian.transpose());
+            square = square.add(Sylvester.Matrix.I(numBones).x(Math.pow(lambda,2)));
+            var inverseSquare = square.inverse();
+            inverseJacobian = inverseSquare.x(jacobian.transpose());
         }
     }
 
@@ -132,12 +132,12 @@ MYAPP.main = function (){
         createJacobian();
         createInverseJacobian();
 
-        theta_delta = (inverseJacobian.x(e_delta)).x(0.017).elements;
+        theta_delta = (inverseJacobian.x(e_delta)).x(0.08).elements;
 
         boneChain.forEach(move);
         boneChain.forEach(draw);
     }());
-}
+};
 
 
 

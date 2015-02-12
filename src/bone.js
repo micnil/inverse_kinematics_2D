@@ -1,18 +1,17 @@
+/*global Sylvester */
+/*global $V */
+
 var Bone = function (x, y, length){
-    this.startPos = $V([x, y, 0]) || $V([0,0,0]);
+    this.startPos = (x && y) ? $V([x, y, 0]) : $V([0,0,0]);
     this.length = length || 30;
     this.endPos = $V([this.length, 0, 0]);
-    //this.modelMatrix = Sylvester.Matrix.I(3);
-    this.rotation = Sylvester.Matrix.I(3);
+    //this.rotation = Sylvester.Matrix.I(3);
     this.rotationAxis = Sylvester.Vector.k;
 };
 
 Bone.prototype = {
 
     draw: function (context) { 
-
-        /*this.startPos = this.modelMatrix.x(this.startPos);
-        this.endPos = this.modelMatrix.x(this.endPos);*/
         
         context.save();
 
@@ -24,13 +23,6 @@ Bone.prototype = {
         context.stroke();
 
         context.restore();
-        
-    },
-
-    /** 
-    * Translates the joint (this.startpoint) and endPoint to given coordinate (vec3)
-    */
-    translate: function (coords){
         
     },
 
