@@ -1,0 +1,13 @@
+#info{
+	position: absolute; 
+	background-color: "#FF0000";
+	z-index: 1;
+}
+#instructions{
+	width:80%;
+	text-align: center;
+	position: absolute; 
+	
+	background-color: "#FF0000";
+	z-index: 1;
+}

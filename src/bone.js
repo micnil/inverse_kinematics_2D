@@ -5,8 +5,8 @@ var Bone = function (x, y, length){
     this.startPos = (x && y) ? $V([x, y, 0]) : $V([0,0,0]);
     this.length = length || 30;
     this.endPos = $V([this.length, 0, 0]);
-    //this.rotation = Sylvester.Matrix.I(3);
     this.rotationAxis = Sylvester.Vector.k;
+    this.color = "#0000FF";
 };
 
 Bone.prototype = {
@@ -15,11 +15,12 @@ Bone.prototype = {
         
         context.save();
 
-        context.fillStyle = "#0000FF";
         context.beginPath();
         context.moveTo(this.startPos.e(1), this.startPos.e(2));
         var globalEnd=this.getGlobalEndPos();
         context.lineTo(globalEnd.e(1), globalEnd.e(2));
+        context.lineWidth = 5;
+        context.strokeStyle = this.color;
         context.stroke();
 
         context.restore();
