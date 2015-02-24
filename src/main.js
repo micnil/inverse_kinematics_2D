@@ -9,7 +9,7 @@ var IK = IK || {};
 IK.event = {
     selectedBoneIndices: [false, false, false, false, false, false, false, false, false],
     addMouseListener: function(element) {
-        var mouse = {x: 0, y: 0, event: null},
+        var mouse = {x: 0, y: 0},
         body_scrollLeft = document.body.scrollLeft,
         element_scrollLeft = document.documentElement.scrollLeft,
         body_scrollTop = document.body.scrollTop,
@@ -32,7 +32,7 @@ IK.event = {
 
             mouse.x = x;
             mouse.y = y;
-            mouse.event = event;
+            //mouse.event = event;
         }, false);
 
         return mouse;
